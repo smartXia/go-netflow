@@ -152,7 +152,7 @@ func showTable(ps []*netflow.Process) {
 				Timestamp:     adjustedTime,
 			},
 		}
-		fmt.Printf("上报流量%v", testMonitorInfo)
+		fmt.Printf("上报流量%v \n", testMonitorInfo)
 		err := client.ReportMonitorInfo(context.TODO(), testMonitorInfo)
 		if err != nil {
 			fmt.Print(err)
