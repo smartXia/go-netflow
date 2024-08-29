@@ -143,8 +143,8 @@ func showTable(ps []*netflow.Process) {
 		adjustedTime := now - (now % (0.5 * 60))
 		testMonitorInfo := []rpc.MonitorInfo{
 			{
-				DownBandwidth: float64(po.TrafficStats.In),
-				UpBandwidth:   float64(po.TrafficStats.Out),
+				DownBandwidth: float64(po.TrafficStats.In / 1000),
+				UpBandwidth:   float64(po.TrafficStats.Out / 1000),
 				CPUUsage:      0,
 				DiskUsage:     0,
 				MemUsage:      0,
