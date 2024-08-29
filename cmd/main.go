@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"github.com/rfyiamcool/go-netflow/rpc"
 	"os"
 	"os/signal"
 	"syscall"
@@ -44,8 +46,8 @@ func start(pname string) {
 		recentRankLimit = 10
 
 		sigch   = make(chan os.Signal, 1)
-		ticker  = time.NewTicker(3 * time.Second)
-		timeout = time.NewTimer(300 * time.Second)
+		ticker  = time.NewTicker(30 * time.Second)
+		timeout = time.NewTimer(3000 * time.Second)
 	)
 
 	signal.Notify(sigch,
@@ -102,6 +104,17 @@ func showTable(ps []*netflow.Process) {
 	table.SetRowLine(true)
 
 	items := [][]string{}
+	urlProvider := rpc.UrlProvider{
+		ServerEndpoint: "http://49.65.102.63:8334",
+		CommonHeaders: rpc.CommonHeadersProvider{
+			ImageVersion: "",
+			DeviceId:     "c05803a7250ab9ccddb957122de312d0",
+			BizType:      "2",
+			Auth:         nil,
+		},
+	}
+	client := rpc.CreateRpcClient(urlProvider)
+
 	for _, po := range ps {
 		inRate := humanBytes(po.TrafficStats.InRate)
 		if po.TrafficStats.InRate > int64(thold) {
@@ -125,10 +138,27 @@ func showTable(ps []*netflow.Process) {
 		}
 
 		items = append(items, item)
+		now := time.Now().Unix()
+		adjustedTime := now - (now % (0.5 * 60))
+		testMonitorInfo := []rpc.MonitorInfo{
+			{
+				DownBandwidth: humanBytes(po.TrafficStats.In),
+				UpBandwidth:   humanBytes(po.TrafficStats.Out),
+				CPUUsage:      0,
+				DiskUsage:     0,
+				MemUsage:      0,
+				Timestamp:     adjustedTime,
+			},
+		}
+		fmt.Printf("上报流量%v", testMonitorInfo)
+		err := client.ReportMonitorInfo(context.TODO(), testMonitorInfo)
+		if err != nil {
+			fmt.Print(err)
+			return
+		}
+		//table.AppendBulk(items)
+		//table.Render()
 	}
-
-	table.AppendBulk(items)
-	table.Render()
 }
 
 func humanBytes(n int64) string {
