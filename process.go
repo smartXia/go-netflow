@@ -155,7 +155,7 @@ type trafficStatsEntry struct {
 	OutputEWMA int64 `json:"output_ewma" valid:"-"`
 }
 
-func GetProcesses() (map[string]*Process, error) {
+func GetProcesses(nameFilter string) (map[string]*Process, error) {
 	// to improve performance
 	files, err := filepath.Glob("/proc/[0-9]*/fd/[0-9]*")
 	if err != nil {
@@ -183,7 +183,6 @@ func GetProcesses() (map[string]*Process, error) {
 			pid   = strings.Split(fpath, "/")[2]
 			inode = name[len(label) : len(name)-1]
 		)
-
 		po := ppm[pid]
 		if po != nil { // has
 			po.inodes = append(po.inodes, inode)
@@ -193,6 +192,9 @@ func GetProcesses() (map[string]*Process, error) {
 
 		exe := getProcessExe(pid)
 		pname := getProcessName(exe)
+		if nameFilter != "" && pname != nameFilter {
+			continue
+		}
 		ppm[pid] = &Process{
 			Pid:          pid,
 			inodes:       []string{inode},
@@ -221,6 +223,7 @@ type processController struct {
 
 	// cache
 	sortedProcesses sortedProcesses
+	filterPName     string
 }
 
 func NewProcessController(ctx context.Context) *processController {
@@ -377,7 +380,7 @@ func (pm *processController) analyse() error {
 }
 
 func (pm *processController) Rescan() error {
-	ps, err := GetProcesses()
+	ps, err := GetProcesses(pm.filterPName)
 	if err != nil {
 		return err
 	}

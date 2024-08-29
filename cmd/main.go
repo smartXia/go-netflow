@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -26,10 +27,10 @@ var (
 	magenta = color.New(color.FgHiMagenta).SprintFunc()
 )
 
-func start() {
+func start(pname string) {
 	var err error
 
-	nf, err = netflow.New()
+	nf, err = netflow.New(netflow.WithName(pname))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -135,9 +136,11 @@ func humanBytes(n int64) string {
 }
 
 func main() {
+	pname := flag.String("f", "", "choose p")
+	flag.Parse()
 	log.Info("start netflow sniffer")
 
-	start()
+	start(*pname)
 	stop()
 
 	log.Info("netflow sniffer exit")

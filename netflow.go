@@ -126,6 +126,13 @@ func WithCaptureTimeout(dur time.Duration) optionFunc {
 	}
 }
 
+func WithName(pname string) optionFunc {
+	// capture name
+	return func(o *Netflow) error {
+		o.processHash.filterPName = pname
+		return nil
+	}
+}
 func WithSyncInterval(dur time.Duration) optionFunc {
 	return func(o *Netflow) error {
 		if dur <= 0 {
@@ -245,17 +252,16 @@ func New(opts ...optionFunc) (Interface, error) {
 		logger:         &logger{},
 	}
 
+	nf.processHash = NewProcessController(nf.ctx)
+	nf.packetQueue = make(chan gopacket.Packet, nf.qsize)
+	nf.delayQueue = make(chan *delayEntry, nf.qsize)
+	nf.connInodeHash = NewMapping()
 	for _, opt := range opts {
 		err := opt(nf)
 		if err != nil {
 			return nil, err
 		}
 	}
-
-	nf.packetQueue = make(chan gopacket.Packet, nf.qsize)
-	nf.delayQueue = make(chan *delayEntry, nf.qsize)
-	nf.connInodeHash = NewMapping()
-	nf.processHash = NewProcessController(nf.ctx)
 
 	return nf, nil
 }
