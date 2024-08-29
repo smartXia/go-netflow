@@ -156,8 +156,8 @@ func showTable(ps []*netflow.Process) {
 			fmt.Print(err)
 			return
 		}
-		//table.AppendBulk(items)
-		//table.Render()
+		table.AppendBulk(items)
+		table.Render()
 	}
 }
 
