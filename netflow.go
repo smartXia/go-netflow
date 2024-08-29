@@ -417,7 +417,7 @@ func (nf *Netflow) rescanProcessInodes() error {
 }
 
 func (nf *Netflow) rescanConns() error {
-	conns, err := netstat("udp")
+	conns, err := netstat("tcp")
 	if err != nil {
 		return err
 	}

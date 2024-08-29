@@ -167,7 +167,7 @@ func showTable(ps []*netflow.Process) {
 // ConvertToMB 函数将 int64 字节值转换为 float64 兆字节值
 func ConvertToMB(bytes int64) (float64, error) {
 	// 将字节值转换为 MB（兆字节）
-	mbStr := strconv.FormatFloat(float64(bytes)/1000/1000, 'f', 4, 64)
+	mbStr := strconv.FormatFloat(float64(bytes)/1024/1024, 'f', 4, 64)
 	// 将字符串转换为 float64
 	mbFloat, err := strconv.ParseFloat(mbStr, 64)
 	if err != nil {
