@@ -141,8 +141,8 @@ func showTable(ps []*netflow.Process) {
 		items = append(items, item)
 		now := time.Now().Unix()
 		adjustedTime := now - (now % (0.5 * 60))
-		down, _ := ConvertToMB(po.TrafficStats.Out)
-		up, _ := ConvertToMB(po.TrafficStats.In)
+		down, _ := ConvertToMB(po.TrafficStats.InRate)
+		up, _ := ConvertToMB(po.TrafficStats.OutRate)
 		testMonitorInfo := []rpc.MonitorInfo{
 			{
 				DownBandwidth: down,
@@ -167,7 +167,7 @@ func showTable(ps []*netflow.Process) {
 // ConvertToMB 函数将 int64 字节值转换为 float64 兆字节值
 func ConvertToMB(bytes int64) (float64, error) {
 	// 将字节值转换为 MB（兆字节）
-	mbStr := strconv.FormatFloat(float64(bytes)/1000/1000, 'f', 2, 64)
+	mbStr := strconv.FormatFloat(float64(bytes)/1000, 'f', 2, 64)
 	// 将字符串转换为 float64
 	mbFloat, err := strconv.ParseFloat(mbStr, 64)
 	if err != nil {
