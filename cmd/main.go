@@ -47,7 +47,7 @@ func start(pname string) {
 		recentRankLimit = 10
 
 		sigch   = make(chan os.Signal, 1)
-		ticker  = time.NewTicker(30 * time.Second)
+		ticker  = time.NewTicker(3 * time.Second)
 		timeout = time.NewTimer(3000 * time.Second)
 	)
 
@@ -141,11 +141,10 @@ func showTable(ps []*netflow.Process) {
 		items = append(items, item)
 		now := time.Now().Unix()
 		adjustedTime := now - (now % (0.5 * 60))
-
 		testMonitorInfo := []rpc.MonitorInfo{
 			{
-				DownBandwidth: getFloat(humanBytes(po.TrafficStats.In)),
-				UpBandwidth:   getFloat(humanBytes(po.TrafficStats.Out)),
+				DownBandwidth: float64(po.TrafficStats.In),
+				UpBandwidth:   float64(po.TrafficStats.Out),
 				CPUUsage:      0,
 				DiskUsage:     0,
 				MemUsage:      0,
@@ -158,9 +157,11 @@ func showTable(ps []*netflow.Process) {
 			fmt.Print(err)
 			return
 		}
-		table.AppendBulk(items)
-		table.Render()
 	}
+
+	table.AppendBulk(items)
+	table.Render()
+
 }
 func getFloat(str string) float64 {
 	floatValue, _ := strconv.ParseFloat(str, 64)
