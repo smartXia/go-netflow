@@ -141,10 +141,12 @@ func showTable(ps []*netflow.Process) {
 		items = append(items, item)
 		now := time.Now().Unix()
 		adjustedTime := now - (now % (0.5 * 60))
+		down, _ := ConvertToMB(po.TrafficStats.Out)
+		up, _ := ConvertToMB(po.TrafficStats.In)
 		testMonitorInfo := []rpc.MonitorInfo{
 			{
-				DownBandwidth: float64(po.TrafficStats.In / 1000 / 1000),
-				UpBandwidth:   float64(po.TrafficStats.Out / 1000 / 1000),
+				DownBandwidth: down,
+				UpBandwidth:   up,
 				CPUUsage:      0,
 				DiskUsage:     0,
 				MemUsage:      0,
@@ -161,10 +163,19 @@ func showTable(ps []*netflow.Process) {
 	table.AppendBulk(items)
 	table.Render()
 }
-func getFloat(str string) float64 {
-	floatValue, _ := strconv.ParseFloat(str, 64)
-	return floatValue
+
+// ConvertToMB 函数将 int64 字节值转换为 float64 兆字节值
+func ConvertToMB(bytes int64) (float64, error) {
+	// 将字节值转换为 MB（兆字节）
+	mbStr := strconv.FormatFloat(float64(bytes)/1000/1000, 'f', 2, 64)
+	// 将字符串转换为 float64
+	mbFloat, err := strconv.ParseFloat(mbStr, 64)
+	if err != nil {
+		return 0, err // 如果转换错误，返回 0 和错误信息
+	}
+	return mbFloat, nil // 返回转换后的浮点数
 }
+
 func humanBytes(n int64) string {
 	return humanize.Bytes(uint64(n))
 }
