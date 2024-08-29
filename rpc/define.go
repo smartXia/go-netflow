@@ -105,10 +105,10 @@ type HeartbeatRsp struct {
 type MonitorInfo struct {
 	CPUUsage      float64 `json:"cpuUsage"`
 	DiskUsage     float64 `json:"diskUsage"`
-	DownBandwidth string  `json:"downBandwidth"`
+	DownBandwidth float64 `json:"downBandwidth"`
 	MemUsage      float64 `json:"memUsage"`
 	Timestamp     int64   `json:"timestamp"`
-	UpBandwidth   string  `json:"upBandwidth"`
+	UpBandwidth   float64 `json:"upBandwidth"`
 }
 
 type Netcards struct {

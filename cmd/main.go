@@ -7,6 +7,7 @@ import (
 	"github.com/rfyiamcool/go-netflow/rpc"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -140,10 +141,11 @@ func showTable(ps []*netflow.Process) {
 		items = append(items, item)
 		now := time.Now().Unix()
 		adjustedTime := now - (now % (0.5 * 60))
+
 		testMonitorInfo := []rpc.MonitorInfo{
 			{
-				DownBandwidth: humanBytes(po.TrafficStats.In),
-				UpBandwidth:   humanBytes(po.TrafficStats.Out),
+				DownBandwidth: getFloat(humanBytes(po.TrafficStats.In)),
+				UpBandwidth:   getFloat(humanBytes(po.TrafficStats.Out)),
 				CPUUsage:      0,
 				DiskUsage:     0,
 				MemUsage:      0,
@@ -160,7 +162,10 @@ func showTable(ps []*netflow.Process) {
 		table.Render()
 	}
 }
-
+func getFloat(str string) float64 {
+	floatValue, _ := strconv.ParseFloat(str, 64)
+	return floatValue
+}
 func humanBytes(n int64) string {
 	return humanize.Bytes(uint64(n))
 }
