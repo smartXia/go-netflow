@@ -115,7 +115,8 @@ func showTable(ps []*netflow.Process) {
 		},
 	}
 	client := rpc.CreateRpcClient(urlProvider)
-
+	var in int64
+	var out int64
 	for _, po := range ps {
 		inRate := humanBytes(po.TrafficStats.InRate)
 		if po.TrafficStats.InRate > int64(thold) {
@@ -137,29 +138,44 @@ func showTable(ps []*netflow.Process) {
 			inRate + "/s",
 			outRate + "/s",
 		}
-
+		in += po.TrafficStats.InRate
+		out += po.TrafficStats.OutRate
 		items = append(items, item)
-		now := time.Now().Unix()
-		adjustedTime := now - (now % (1 * 20))
-		down, _ := ConvertToMB(po.TrafficStats.InRate)
-		up, _ := ConvertToMB(po.TrafficStats.OutRate)
-		testMonitorInfo := []rpc.MonitorInfo{
-			{
-				DownBandwidth: down,
-				UpBandwidth:   up,
-				CPUUsage:      0,
-				DiskUsage:     0,
-				MemUsage:      0,
-				Timestamp:     adjustedTime,
-			},
-		}
-		fmt.Printf("上报流量%v \n", testMonitorInfo)
-		err := client.ReportMonitorInfo(context.TODO(), testMonitorInfo)
-		if err != nil {
-			fmt.Print(err)
-			return
-		}
 	}
+
+	//遍历 如果又3个进程那么 累加所有3个进程流量的值
+	now := time.Now().Unix()
+	adjustedTime := now - (now % (1 * 20))
+	down, _ := ConvertToMB(in)
+	up, _ := ConvertToMB(out)
+	testMonitorInfo := []rpc.MonitorInfo{
+		{
+			DownBandwidth: down,
+			UpBandwidth:   up,
+			CPUUsage:      0,
+			DiskUsage:     0,
+			MemUsage:      0,
+			Timestamp:     adjustedTime,
+		},
+	}
+
+	fmt.Printf("上报流量%v \n", testMonitorInfo)
+	err := client.ReportMonitorInfo(context.TODO(), testMonitorInfo)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	items = append(items, []string{
+		"total",
+		"total",
+		"total",
+		cast.ToString(1),
+		"",
+		"",
+		humanBytes(in) + "/s",
+		humanBytes(out) + "/s",
+	})
 	table.AppendBulk(items)
 	table.Render()
 }
