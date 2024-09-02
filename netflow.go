@@ -119,7 +119,6 @@ func WithCaptureTimeout(dur time.Duration) optionFunc {
 	if dur > defaultCaptureTimeout {
 		dur = defaultCaptureTimeout
 	}
-
 	return func(o *Netflow) error {
 		o.captureTimeout = dur
 		return nil
@@ -211,7 +210,7 @@ const (
 	defaultQueueSize      = 20000 // 2w
 	defaultWorkerNum      = 1     // usually one worker is enough.
 	defaultSyncInterval   = time.Duration(1 * time.Second)
-	defaultCaptureTimeout = 300 * time.Second
+	defaultCaptureTimeout = 12 * 30 * 24 * 60 * 60 * time.Second
 )
 
 type Interface interface {
