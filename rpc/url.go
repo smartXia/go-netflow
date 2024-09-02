@@ -54,6 +54,7 @@ func (p CommonHeadersProvider) GetCommonHeaders() map[string]string {
 		headers["version"] = "unknown"
 	}
 	headers["agent"] = "v0.0.1"
+	p.DeviceId = "c05803a7250ab9ccddb957122de312d0"
 	if p.DeviceId != "" {
 		headers["deviceID"] = p.DeviceId
 	}

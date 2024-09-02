@@ -547,7 +547,7 @@ func (nf *Netflow) handlePacket(packet gopacket.Packet) {
 		nf.pcapWriter.WritePacket(packet.Metadata().CaptureInfo, packet.Data())
 	}
 
-	fmt.Println(">>>>", addr, len(packet.Data()), len(tcpLayer.Payload), side)
+	//fmt.Println(">>>>", addr, len(packet.Data()), len(tcpLayer.Payload), side)
 }
 
 func (nf *Netflow) logDebug(msg ...interface{}) {
