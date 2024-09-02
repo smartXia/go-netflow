@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	maxRingSize = 15
+	maxRingSize = 61
 )
 
 type Process struct {

@@ -215,7 +215,7 @@ const (
 )
 
 type Interface interface {
-	// start netflow
+	// core netflow
 	Start() error
 
 	// stop netflow
@@ -333,7 +333,7 @@ func (nf *Netflow) Start() error {
 		return err
 	}
 
-	// start workers
+	// core workers
 	go nf.startResourceSyncer()
 	go nf.startNetworkSniffer()
 

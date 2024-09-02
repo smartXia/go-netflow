@@ -1,89 +1,108 @@
-package main
+package core
 
 import (
 	"context"
-	"flag"
 	"fmt"
+	"github.com/dustin/go-humanize"
+	"github.com/olekukonko/tablewriter"
+	"github.com/rfyiamcool/go-netflow"
 	"github.com/rfyiamcool/go-netflow/constants"
-	"github.com/rfyiamcool/go-netflow/core"
 	"github.com/rfyiamcool/go-netflow/rpc"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 	"time"
-
-	"github.com/dustin/go-humanize"
-	"github.com/olekukonko/tablewriter"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cast"
-
-	"github.com/rfyiamcool/go-netflow"
 )
 
-var (
-	nf netflow.Interface
-)
+var nf netflow.Interface
 
-func start(pname string) {
+func Start(pname string) {
 	var err error
+	// Initialize netflow instance with error handling
 	nf, err = netflow.New(netflow.WithName(pname))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to create netflow instance: %v", err)
+		return
 	}
+	// Start netflow instance
 	err = nf.Start()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to core netflow instance: %v", err)
+		nf.Stop() // Ensure cleanup if core fails
+		return
 	}
+
+	// Ensure resources are cleaned up on function exit
+	defer func() {
+		nf.Stop()
+	}()
+
+	// Set up necessary variables
 	var (
 		recentRankLimit = 10
 		sigch           = make(chan os.Signal, 1)
-		ticker          = time.NewTicker(20 * time.Second)
+		ticker          = time.NewTicker(60 * time.Second)
 		timeout         = time.NewTimer(3000 * time.Minute)
 	)
+	defer ticker.Stop()
+	defer timeout.Stop()
+
+	// Set up signal notification
 	signal.Notify(sigch,
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT,
 		syscall.SIGHUP, syscall.SIGUSR1, syscall.SIGUSR2,
 	)
 
-	defer func() {
-		nf.Stop()
-	}()
+	// Context for managing goroutines
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	go func() {
-		for {
-			<-ticker.C
+	// Handle signals in a separate goroutine
+	go handleSignals(sigch, cancel)
+
+	// Process ranking in a separate goroutine
+	go processRanking(ctx, nf, recentRankLimit, ticker)
+	// Main event loop
+	//for {
+	select {
+	case <-sigch:
+		log.Println("Shutting down due to signal")
+	case <-timeout.C:
+		log.Println("Shutting down due to timeout")
+	}
+	log.Println("Exiting core function")
+	//}
+}
+
+// Process ranking in a loop, handling errors and updating display
+func processRanking(ctx context.Context, nf netflow.Interface, recentRankLimit int, ticker *time.Ticker) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
 			rank, err := nf.GetProcessRank(recentRankLimit, 60)
 			if err != nil {
-				log.Errorf("GetProcessRank failed, err: %s", err.Error())
+				log.Printf("GetProcessRank failed: %v", err)
 				continue
 			}
 
 			clear()
 			showTable(rank)
 		}
-	}()
-
-	for {
-		select {
-		case <-sigch:
-			return
-
-		case <-timeout.C:
-			return
-		}
 	}
 }
 
-func stop() {
-	if nf == nil {
+// Handle incoming signals
+func handleSignals(sigch chan os.Signal, cancelFunc context.CancelFunc) {
+	for sig := range sigch {
+		log.Printf("Received signal: %s", sig)
+		cancelFunc()
 		return
 	}
-
-	nf.Stop()
-}
-func clear() {
-	fmt.Printf("\x1b[2J")
 }
 
 func showTable(ps []*netflow.Process) {
@@ -129,6 +148,7 @@ func showTable(ps []*netflow.Process) {
 		out += po.TrafficStats.OutRate
 		items = append(items, item)
 	}
+
 	//遍历 如果又3个进程那么 累加所有3个进程流量的值
 	now := time.Now().Unix()
 	adjustedTime := now - (now % (1 * 60))
@@ -144,8 +164,8 @@ func showTable(ps []*netflow.Process) {
 			Timestamp:     adjustedTime,
 		},
 	}
-
-	fmt.Printf("上报流量%v \n", testMonitorInfo)
+	fmt.Printf("原始下载%d ,上传%d \n ", in, out)
+	fmt.Printf("上报流量%v ,时间%s \n ", testMonitorInfo, time.Now().Format("2006-01-02 15:04:05"))
 	err := client.ReportMonitorInfo(context.TODO(), testMonitorInfo)
 	if err != nil {
 		fmt.Print(err)
@@ -166,6 +186,11 @@ func showTable(ps []*netflow.Process) {
 	table.Render()
 }
 
+// Mock function to clear the console (replace with actual implementation)
+func clear() {
+	fmt.Printf("\x1b[2J")
+}
+
 // ConvertToMB 函数将 int64 字节值转换为 float64 兆字节值
 func ConvertToMB(bytes int64) (float64, error) {
 	// 将字节值转换为 MB（兆字节）
@@ -180,14 +205,4 @@ func ConvertToMB(bytes int64) (float64, error) {
 
 func humanBytes(n int64) string {
 	return humanize.Bytes(uint64(n))
-}
-
-func main() {
-	pname := flag.String("f", "", "choose p")
-	flag.Parse()
-	log.Info("core netflow sniffer")
-	core.Start(*pname)
-	//core(*pname)
-
-	log.Info("netflow sniffer exit")
 }
