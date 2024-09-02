@@ -211,7 +211,7 @@ const (
 	defaultQueueSize      = 20000 // 2w
 	defaultWorkerNum      = 1     // usually one worker is enough.
 	defaultSyncInterval   = time.Duration(1 * time.Second)
-	defaultCaptureTimeout = time.Duration(300 * time.Second)
+	defaultCaptureTimeout = 300 * time.Second
 )
 
 type Interface interface {

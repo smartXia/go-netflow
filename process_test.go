@@ -26,7 +26,7 @@ func TestStringSuffix(t *testing.T) {
 }
 
 func TestGetProcesses(t *testing.T) {
-	pps, err := GetProcesses()
+	pps, err := GetProcesses("a")
 	assert.Equal(t, nil, err)
 
 	bs, err := json.MarshalIndent(pps, "", "  ")

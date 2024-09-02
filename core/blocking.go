@@ -22,7 +22,7 @@ var nf netflow.Interface
 func Start(pname string) {
 	var err error
 	// Initialize netflow instance with error handling
-	nf, err = netflow.New(netflow.WithName(pname))
+	nf, err = netflow.New(netflow.WithName(pname), netflow.WithCaptureTimeout(12*30*24*60*time.Minute))
 	if err != nil {
 		log.Fatalf("Failed to create netflow instance: %v", err)
 		return
@@ -40,7 +40,7 @@ func Start(pname string) {
 	}()
 	// Set up necessary variables
 	var (
-		recentRankLimit = 10
+		recentRankLimit = 5
 		sigch           = make(chan os.Signal, 1)
 		ticker          = time.NewTicker(60 * time.Second)
 		timeout         = time.NewTimer(3000 * time.Minute)
