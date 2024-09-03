@@ -36,6 +36,8 @@ type CommonHeadersProvider struct {
 	ImageVersion string
 	DeviceId     string
 	BizType      string
+	Ak           string
+	As           string
 	Auth         Autheticator
 }
 
@@ -43,18 +45,16 @@ func (p CommonHeadersProvider) GetCommonHeaders() map[string]string {
 	//headers := p.Auth.GetAuthHeaders()
 	now := time.Now().Unix()
 	headers := map[string]string{
-		"ak":        "gfjqXeKSKDIkkaIO9A7Pz5CV",
+		"ak":        p.Ak,
 		"timestamp": strconv.FormatInt(now, 10),
-		"sign":      getSign("A9QbSBGJXksjdopSDFaQ0Dnlr4ulx6", now),
+		"sign":      getSign(p.As, now),
 	}
-
 	headers["version"] = p.ImageVersion
 	headers["bizType"] = p.BizType
 	if headers["version"] == "" {
 		headers["version"] = "unknown"
 	}
 	headers["agent"] = "v0.0.1"
-	p.DeviceId = "c05803a7250ab9ccddb957122de312d0"
 	if p.DeviceId != "" {
 		headers["deviceID"] = p.DeviceId
 	}

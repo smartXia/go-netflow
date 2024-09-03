@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/rfyiamcool/go-netflow"
+	"github.com/rfyiamcool/go-netflow/config"
 	"github.com/rfyiamcool/go-netflow/constants"
 	"github.com/rfyiamcool/go-netflow/rpc"
 	"github.com/rfyiamcool/go-netflow/utils"
@@ -19,10 +20,10 @@ import (
 
 var nf netflow.Interface
 
-func Start(pname string) {
+func Start(c config.Config) {
 	var err error
 	// Initialize netflow instance with error handling
-	nf, err = netflow.New(netflow.WithName(pname), netflow.WithCaptureTimeout(12*30*24*60*time.Minute))
+	nf, err = netflow.New(netflow.WithName(c.Nethogs), netflow.WithCaptureTimeout(12*30*24*60*time.Minute))
 	if err != nil {
 		log.Fatalf("Failed to create netflow instance: %v", err)
 		return
@@ -61,7 +62,7 @@ func Start(pname string) {
 	go handleSignals(sigch, cancel)
 
 	// Process ranking in a separate goroutine
-	go processRanking(ctx, nf, recentRankLimit, ticker)
+	go processRanking(ctx, c, nf, recentRankLimit, ticker)
 	// Main event loop
 	//for {
 	select {
@@ -84,7 +85,7 @@ func handleSignals(sigch chan os.Signal, cancelFunc context.CancelFunc) {
 }
 
 // 在循环中处理排序，处理错误和更新显示
-func processRanking(ctx context.Context, nf netflow.Interface, recentRankLimit int, ticker *time.Ticker) {
+func processRanking(ctx context.Context, c config.Config, nf netflow.Interface, recentRankLimit int, ticker *time.Ticker) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -95,14 +96,14 @@ func processRanking(ctx context.Context, nf netflow.Interface, recentRankLimit i
 				log.Printf("GetProcessRank failed: %v", err)
 				continue
 			}
-			showTable(rank)
+			showTable(c, rank)
 			clear()
 		}
 	}
 }
 
 // 渲染和遍历
-func showTable(ps []*netflow.Process) {
+func showTable(c config.Config, ps []*netflow.Process) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"pid", "name", "exe", "inodes", "sum_in", "sum_out", "in_rate", "out_rate"})
 	table.SetRowLine(true)
@@ -125,13 +126,16 @@ func showTable(ps []*netflow.Process) {
 		items = append(items, item)
 	}
 	//上报流量信息
-	reportHandler(in, out)
+	reportHandler(in, out, c)
 	table.AppendBulk(items)
 	table.Render()
 }
 
-func reportHandler(in, out int64) {
-	adjustedTime := time.Now().Unix()
+func reportHandler(in, out int64, c config.Config) {
+
+	timestamp := time.Now().Unix()
+	// 取整到最近的分钟
+	adjustedTime := (timestamp / 60) * 60
 	down, up := ConvertToMB(in), ConvertToMB(out)
 	testMonitorInfo := []rpc.MonitorInfo{
 		{
@@ -143,7 +147,15 @@ func reportHandler(in, out int64) {
 	fmt.Printf("原始下载%d MiB ,上传%d MiB\n", in, out)
 	fmt.Printf("上报流量%v ,时间%s\n", testMonitorInfo, time.Now().Format("2006-01-02 15:04:05"))
 	urlProvider := rpc.UrlProvider{
-		ServerEndpoint: "http://49.65.102.63:8334",
+		ServerEndpoint: c.Agent.ServerEndpoint,
+		CommonHeaders: rpc.CommonHeadersProvider{
+			ImageVersion: "",
+			DeviceId:     c.Agent.DeviceId,
+			BizType:      c.Agent.BizType,
+			Ak:           c.Agent.AppKey,
+			As:           c.Agent.AppSecret,
+			Auth:         nil,
+		},
 	}
 	client := rpc.CreateRpcClient(urlProvider)
 	if err := client.ReportMonitorInfo(context.TODO(), testMonitorInfo); err != nil {
@@ -168,7 +180,7 @@ func formatRates(inRate, outRate int64) (string, string) {
 // ConvertToMB 函数将 int64 字节值转换为 float64 兆字节值
 func ConvertToMB(bytes int64) float64 {
 	// 将字节值转换为 MB（兆字节）
-	mbStr := strconv.FormatFloat(float64(bytes)*8/1024/1024, 'f', 4, 64)
+	mbStr := strconv.FormatFloat(float64(bytes)*8/1000/1000, 'f', 4, 64)
 	// 将字符串转换为 float64
 	mbFloat, _ := strconv.ParseFloat(mbStr, 64)
 	return mbFloat // 返回转换后的浮点数

@@ -1,0 +1,21 @@
+log:
+  level: INFO
+  filePath: ""
+agent:
+  rootDir: /usr/local/super-agent/
+  serverEndpoint: https://www.pcdncom.com
+  deviceId: c05803a7250ab9ccddb957122de312d0
+  bizType: "2"
+  appKey: gfjqXeKSKDIkkaIO9A7Pz5CV
+  appSecret: A9QbSBGJXksjdopSDFaQ0Dnlr4ulx6
+pppoe:
+  pingAddr: 223.5.5.5
+  frpsAddr: frps.pcdncom.com
+monitor:
+  collectdRddPath: /var/lib/collectd/rrd
+  reportInterval: 5
+  reportBucket: 5
+mockedServerConfPath: ""
+deviceIdPath: /etc/machine-id
+nethogs: "Download"
+

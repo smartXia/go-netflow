@@ -69,7 +69,7 @@ func (c *rpcClientImpl) ReportMonitorInfo(ctx context.Context, monitorInfos []Mo
 		"data": &monitorInfos,
 	}
 
-	url, headers := c.urlProvider.Get("/api/common/v1/monitor")
+	url, headers := c.urlProvider.Get("/api/common/v1/nethogs/monitor")
 	return executeRequest(ctx, "ReportMonitorInfo", "POST", url, headers, body, nil)
 }
 
