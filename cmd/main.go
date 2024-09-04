@@ -8,9 +8,8 @@ import (
 )
 
 func main() {
-	pname := flag.String("f", "Download", "choose p")
+	pname := flag.String("f", "", "choose p")
 	configPathPtr := flag.String("config", "/usr/local/super-agent/config.yaml", "super-agent config file path")
-	//configPathPtr := flag.String("config", "./config.yaml", "super-agent config file path")
 	flag.Parse()
 	log.Info("core netflow sniffer")
 	configSuperAgent := config.GetConfig(*configPathPtr)

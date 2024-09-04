@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	maxRingSize = 61
+	maxRingSize = 15
 )
 
 type Process struct {
@@ -156,6 +156,71 @@ type trafficStatsEntry struct {
 }
 
 func GetProcesses(nameFilter string) (map[string]*Process, error) {
+	ppm := make(map[string]*Process, 1000)
+	label := "socket:["
+
+	// 获取与 nameFilter 匹配的进程 PID 列表
+	pidList, err := getMatchingPIDs(nameFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pid := range pidList {
+		fdPath := fmt.Sprintf("/proc/%s/fd", pid)
+		files, err := filepath.Glob(filepath.Join(fdPath, "[0-9]*"))
+		if err != nil {
+			continue // 如果出错，跳过这个进程
+		}
+
+		for _, fpath := range files {
+			name, err := os.Readlink(fpath)
+			if err != nil || !strings.HasPrefix(name, label) {
+				continue
+			}
+
+			inode := name[len(label) : len(name)-1]
+
+			po, exists := ppm[pid]
+			if exists {
+				po.inodes = append(po.inodes, inode)
+				po.InodeCount++
+			} else {
+				exe := getProcessExe(pid)
+				ppm[pid] = &Process{
+					Pid:          pid,
+					inodes:       []string{inode},
+					InodeCount:   1,
+					Name:         nameFilter,
+					Exe:          exe,
+					TrafficStats: new(trafficStatsEntry),
+				}
+			}
+		}
+	}
+
+	return ppm, nil
+}
+
+// 获取与 nameFilter 匹配的所有 PID
+func getMatchingPIDs(nameFilter string) ([]string, error) {
+	pids := []string{}
+	procDirs, err := filepath.Glob("/proc/[0-9]*")
+	if err != nil {
+		return nil, err
+	}
+	for _, procDir := range procDirs {
+		pid := filepath.Base(procDir)
+		exe := getProcessExe(pid)
+		pname := getProcessName(exe)
+		if pname == nameFilter {
+			pids = append(pids, pid)
+		}
+	}
+
+	return pids, nil
+}
+
+func GetProcesses1(nameFilter string) (map[string]*Process, error) {
 	// to improve performance
 	files, err := filepath.Glob("/proc/[0-9]*/fd/[0-9]*")
 	if err != nil {

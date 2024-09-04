@@ -333,6 +333,7 @@ func (nf *Netflow) Start() error {
 	}
 
 	// core workers
+	//1.扫描赋值 要检测的进程 map 2.扫描网络流量
 	go nf.startResourceSyncer()
 	go nf.startNetworkSniffer()
 
@@ -367,7 +368,7 @@ func (nf *Netflow) startResourceSyncer() {
 
 	// first run at the beginning
 	nf.rescanResouce()
-
+	//2.阻塞 扫描资源
 	for {
 		select {
 		case <-nf.ctx.Done():
@@ -475,6 +476,8 @@ func (nf *Netflow) dequeue() gopacket.Packet {
 	}
 }
 
+// 1.阻塞 线程nf 中是否存在 packetQueue数据包
+// 2.有处理包
 func (nf *Netflow) loopHandlePacket() {
 	for {
 		pkt := nf.dequeue()
@@ -485,8 +488,48 @@ func (nf *Netflow) loopHandlePacket() {
 		nf.handlePacket(pkt)
 	}
 }
-
 func (nf *Netflow) handlePacket(packet gopacket.Packet) {
+	// 获取 IPv4 层
+	ipLayer, ok := packet.Layer(layers.LayerTypeIPv4).(*layers.IPv4)
+	if !ok {
+		return
+	}
+	// 获取 TCP 层
+	tcpLayer, ok := packet.Layer(layers.LayerTypeTCP).(*layers.TCP)
+	if !ok {
+		return
+	}
+	// 定义本地和远程的 IP 和端口
+	localIP, localPort := ipLayer.SrcIP, tcpLayer.SrcPort
+	remoteIP, remotePort := ipLayer.DstIP, tcpLayer.DstPort
+
+	// 确定数据包的方向
+	side := nf.determineSide(ipLayer.SrcIP.String())
+
+	// 计算 TCP 负载长度
+	length := len(tcpLayer.Payload)
+
+	// 生成地址字符串
+	addr := spliceAddr(localIP, localPort, remoteIP, remotePort)
+
+	// 增加流量统计
+	nf.increaseTraffic(addr, int64(length), side)
+
+	// 如果启用了 pcap 文件记录，则写入数据包
+	if nf.pcapFile != nil {
+		nf.pcapWriter.WritePacket(packet.Metadata().CaptureInfo, packet.Data())
+	}
+}
+
+// determineSide 根据 IP 判断数据包的方向
+func (nf *Netflow) determineSide(srcIP string) sideOption {
+	if nf.isBindIPs(srcIP) {
+		return outputSide
+	}
+	return inputSide
+}
+
+func (nf *Netflow) handlePacket1(packet gopacket.Packet) {
 	// var (
 	// 	ethLayer layers.Ethernet
 	// 	ipLayer  layers.IPv4
@@ -570,6 +613,8 @@ func (nf *Netflow) isBindIPs(ipa string) bool {
 	return ok
 }
 
+// 1.网卡筛选
+// 2.子线程执行抓包 核心
 func (nf *Netflow) startNetworkSniffer() {
 	for dev := range nf.bindDevices {
 		go nf.captureDevice(dev)
@@ -705,6 +750,14 @@ func parseIpaddrsAndDevices() (map[string]nullObject, map[string]nullObject) {
 			continue
 		}
 
+		if strings.HasPrefix(dev.Name, "enp") {
+			devNames[dev.Name] = nullObject{}
+			continue
+		}
+		if strings.HasPrefix(dev.Name, "ppp") {
+			devNames[dev.Name] = nullObject{}
+			continue
+		}
 		if strings.HasPrefix(dev.Name, "lo") {
 			devNames[dev.Name] = nullObject{}
 			continue
