@@ -271,7 +271,7 @@ func (nf *Netflow) Done() <-chan struct{} {
 
 func (nf *Netflow) GetProcessRank(limit int, recentSeconds int) ([]*Process, error) {
 	if recentSeconds > maxRingSize {
-		return nil, errors.New("windows interval must <= 15")
+		return nil, errors.New("windows interval must <= 60")
 	}
 
 	nf.processHash.Sort(recentSeconds)
@@ -315,7 +315,7 @@ func (nf *Netflow) configurePersist() error {
 
 	nf.pcapFile = f
 	nf.pcapWriter = pcapgo.NewWriter(f)
-	nf.pcapWriter.WriteFileHeader(1024, layers.LinkTypeEthernet)
+	nf.pcapWriter.WriteFileHeader(102400, layers.LinkTypeEthernet)
 	return nil
 }
 
@@ -508,7 +508,7 @@ func (nf *Netflow) handlePacket(packet gopacket.Packet) {
 
 	// 计算 TCP 负载长度
 	length := len(tcpLayer.Payload)
-
+	//println("length1", length)
 	// 生成地址字符串
 	addr := spliceAddr(localIP, localPort, remoteIP, remotePort)
 
@@ -754,6 +754,11 @@ func parseIpaddrsAndDevices() (map[string]nullObject, map[string]nullObject) {
 			devNames[dev.Name] = nullObject{}
 			continue
 		}
+
+		if strings.HasPrefix(dev.Name, "eno") {
+			devNames[dev.Name] = nullObject{}
+			continue
+		}
 		if strings.HasPrefix(dev.Name, "ppp") {
 			devNames[dev.Name] = nullObject{}
 			continue
@@ -773,12 +778,12 @@ func parseIpaddrsAndDevices() (map[string]nullObject, map[string]nullObject) {
 
 func buildPcapHandler(device string, timeout time.Duration, pfilter string) (*pcap.Handle, error) {
 	var (
-		snapshotLen int32 = 65536
-		promisc     bool  = false
+		snapshotLen int32 = 160000
+		//promisc     bool  = true
 	)
 
 	// if packet captured size >= snapshotLength or 1 second's timer is expired, call user layer.
-	handler, err := pcap.OpenLive(device, snapshotLen, promisc, time.Second)
+	handler, err := pcap.OpenLive(device, snapshotLen, true, pcap.BlockForever)
 	if err != nil {
 		return nil, err
 	}

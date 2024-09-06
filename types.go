@@ -60,7 +60,7 @@ type Mapping struct {
 }
 
 func NewMapping() *Mapping {
-	size := 1000
+	size := 10000
 	return &Mapping{
 		dict: make(map[string]string, size),
 	}

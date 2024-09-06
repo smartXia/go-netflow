@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	maxRingSize = 15
+	maxRingSize = 61
 )
 
 type Process struct {
@@ -156,7 +156,7 @@ type trafficStatsEntry struct {
 }
 
 func GetProcesses(nameFilter string) (map[string]*Process, error) {
-	ppm := make(map[string]*Process, 1000)
+	ppm := make(map[string]*Process, 10000)
 	label := "socket:["
 
 	// 获取与 nameFilter 匹配的进程 PID 列表
@@ -228,7 +228,7 @@ func GetProcesses1(nameFilter string) (map[string]*Process, error) {
 	}
 
 	var (
-		ppm   = make(map[string]*Process, 1000)
+		ppm   = make(map[string]*Process, 10000)
 		label = "socket:["
 	)
 
@@ -293,7 +293,7 @@ type processController struct {
 
 func NewProcessController(ctx context.Context) *processController {
 	var (
-		size = 1000
+		size = 100000
 	)
 
 	cctx, cancel := context.WithCancel(ctx)
@@ -477,7 +477,7 @@ func (pm *processController) Rescan() error {
 	}
 
 	// inode -> pid
-	inodePidMap := make(map[string]string, 1000)
+	inodePidMap := make(map[string]string, 10000)
 	for pid, po := range ps {
 		for _, inode := range po.inodes {
 			inodePidMap[inode] = pid
@@ -489,8 +489,8 @@ func (pm *processController) Rescan() error {
 }
 
 func (pm *processController) Reset() {
-	pm.dict = make(map[string]*Process, 1000)
-	pm.inodePidMap = make(map[string]string, 1000)
+	pm.dict = make(map[string]*Process, 10000)
+	pm.inodePidMap = make(map[string]string, 10000)
 }
 
 // getProcessExe

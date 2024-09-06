@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 package netflow
@@ -17,7 +18,7 @@ type cgroupsLimiter struct {
 func (r *cgroupsLimiter) configure(pid int, core float64, mbn int) error {
 	const (
 		cpuUnit = 10000
-		memUnit = 1024 * 1024
+		memUnit = 1024 * 1024 * 10 * 10
 	)
 
 	if core <= 0 {

@@ -44,7 +44,7 @@ func Start(c config.Config) {
 		recentRankLimit = 5
 		sigch           = make(chan os.Signal, 1)
 		ticker          = time.NewTicker(60 * time.Second)
-		timeout         = time.NewTimer(3000 * time.Minute)
+		timeout         = time.NewTimer(30 * 30 * 24 * 60 * time.Minute)
 	)
 	defer ticker.Stop()
 	defer timeout.Stop()
@@ -165,11 +165,14 @@ func reportHandler(in, out int64, c config.Config) {
 }
 
 func formatRates(inRate, outRate int64) (string, string) {
-	inRateStr := utils.HumanBytes(inRate*8) + "/s"
+	// 使用 %.2f 来确保保留两位小数
+	inRateStr := fmt.Sprintf("%.2f %s", float64(inRate*8)/1000/1000, "Mbit/s")
 	if inRate > int64(constants.Thold) {
 		inRateStr = constants.Red(inRateStr)
 	}
-	outRateStr := utils.HumanBytes(outRate*8) + "/s"
+
+	// 处理 outRate，保留两位小数
+	outRateStr := fmt.Sprintf("%.2f %s", float64(outRate*8)/1000/1000, "Mbit/s")
 	if outRate > int64(constants.Thold) {
 		outRateStr = constants.Red(outRateStr)
 	}

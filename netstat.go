@@ -28,8 +28,8 @@ type ConnectionItem struct {
 	DestPort    string `json:"foreignport"`
 	State       string `json:"state"`
 
-	TxQueue       int           `json:"tx_queue" valid:"-"`
-	RxQueue       int           `json:"rx_queue" valid:"-"`
+	TxQueue       int64         `json:"tx_queue" valid:"-"`
+	RxQueue       int64         `json:"rx_queue" valid:"-"`
 	Timer         int8          `json:"timer" valid:"-"`
 	TimerDuration time.Duration `json:"timer_duration" valid:"-"`
 	Rto           time.Duration // retransmission timeout
@@ -210,8 +210,8 @@ func getConnectionItem(line string) *ConnectionItem {
 		DestIP:      destIP,
 		DestPort:    destPort,
 		Inode:       inode,
-		TxQueue:     int(txq),
-		RxQueue:     int(rxq),
+		TxQueue:     txq,
+		RxQueue:     rxq,
 		Uid:         uid,
 		Uname:       uname,
 		Raw:         line,
