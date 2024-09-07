@@ -1,8 +1,8 @@
 #!/bin/bash
 #这里可替换为你自己的执行程序，其他代码无需更改
-CMS_NAME=netflow
+CMS_NAME=netflow.bin
 
-chmod 777 netflow
+chmod 777 netflow.bin
 #使用说明，用来提示输入参数
 usage() {
  echo "Usage: sh rundev.sh [start|stop|restart|status]"
@@ -13,7 +13,7 @@ usage() {
 is_exist(){
  # shellcheck disable=SC2006
  # shellcheck disable=SC2009
- pid=`ps -ef|grep netflow|grep -v grep|awk '{print $2}' `
+ pid=`ps -ef|grep netflow.bin|grep -v grep|awk '{print $2}' `
  #如果不存在返回1，存在返回0
  if [ -z "${pid}" ]; then
  return 1
@@ -29,7 +29,7 @@ start(){
  echo "${CMS_NAME} is already running. pid=${pid} ."
  else
 
- nohup ./$CMS_NAME> /opt/www/server/logFileName1.file 2>&1 &
+ nohup ./$CMS_NAME> /usr/local/bin/logFileName1.file 2>&1 &
  echo "${CMS_NAME} start success"
  fi
 }

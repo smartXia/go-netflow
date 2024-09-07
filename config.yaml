@@ -17,5 +17,3 @@ monitor:
   reportBucket: 5
 mockedServerConfPath: ""
 deviceIdPath: /etc/machine-id
-nethogs: "Download"
-

@@ -112,23 +112,77 @@ func showTable(c config.Config, ps []*netflow.Process) {
 		in    int64
 		out   int64
 	)
-	for _, po := range ps {
-		inRate, outRate := formatRates(po.TrafficStats.InRate, po.TrafficStats.OutRate)
-		item := []string{po.Pid, po.Name, po.Exe, cast.ToString(po.InodeCount),
-			utils.HumanBytes(po.TrafficStats.In * 8),
-			utils.HumanBytes(po.TrafficStats.Out * 8),
-			inRate,
-			outRate,
-		}
-		//累加多进程级别的适配
-		in += po.TrafficStats.InRate
-		out += po.TrafficStats.OutRate
-		items = append(items, item)
+
+	monitor, err := utils.NewTrafficMonitor("", "9080") // 监控设备上的8080端口流量
+	if err != nil {
+		log.Fatalf("Error creating monitor: %v", err)
 	}
-	//上报流量信息
-	reportHandler(in, out, c)
-	table.AppendBulk(items)
-	table.Render()
+	defer monitor.Close()
+
+	// 每隔一秒获取一次上传流量
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		// 获取上传流量
+		uploadTraffic := monitor.GetUploadTraffic()
+		fmt.Printf("Upload traffic: %d bytes\n", uploadTraffic)
+
+		// 清空前一秒的表格数据
+		items = [][]string{}
+		in, out = 0, 0 // 清空 in 和 out 的累积值
+		if len(ps) == 0 {
+			OutRate := uploadTraffic / 60
+
+			// 获取格式化的流量速率
+			inRate, outRate := formatRates(0, OutRate)
+			items = append(items, // 生成表格行
+				[]string{
+					"0",
+					"9080",
+					"fileServer",
+					"1",
+					"0",
+					"0",
+					inRate,
+					outRate,
+				})
+			in = 0
+			out = OutRate
+		} else {
+			for _, po := range ps {
+				// 设置当前进程的上传速率
+				po.TrafficStats.OutRate = uploadTraffic / 60
+
+				// 获取格式化的流量速率
+				inRate, outRate := formatRates(po.TrafficStats.InRate, po.TrafficStats.OutRate)
+
+				// 生成表格行
+				item := []string{
+					po.Pid,
+					po.Name,
+					po.Exe,
+					cast.ToString(po.InodeCount),
+					utils.HumanBytes(po.TrafficStats.In * 8),
+					utils.HumanBytes(po.TrafficStats.Out * 8),
+					inRate,
+					outRate,
+				}
+
+				// 累加流量信息
+				in += po.TrafficStats.InRate
+				out += po.TrafficStats.OutRate
+				items = append(items, item)
+			}
+		}
+		// 输出流量汇总信息
+		reportHandler(in, out, c)
+
+		// 更新表格并渲染
+		table.ClearRows()
+		table.AppendBulk(items)
+		table.Render()
+	}
 }
 
 func reportHandler(in, out int64, c config.Config) {

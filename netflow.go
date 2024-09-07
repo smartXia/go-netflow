@@ -506,20 +506,60 @@ func (nf *Netflow) handlePacket(packet gopacket.Packet) {
 	// 确定数据包的方向
 	side := nf.determineSide(ipLayer.SrcIP.String())
 
-	// 计算 TCP 负载长度
-	length := len(tcpLayer.Payload)
-	//println("length1", length)
+	// 计算 TCP 负载长度（仅负载部分）
+	payloadLength := len(tcpLayer.Payload)
+
+	// 计算 IP 头部和 TCP 头部的长度
+	ipHeaderLength := int(ipLayer.IHL) * 4          // IHL (Internet Header Length) 以 32-bit 为单位, 需要乘以4转换为字节
+	tcpHeaderLength := int(tcpLayer.DataOffset) * 4 // TCP DataOffset 以 32-bit 为单位, 也需要乘以4
+
+	// 计算整个 TCP 数据包的长度，包括 IP 头部、TCP 头部以及负载部分
+	totalLength := ipHeaderLength + tcpHeaderLength + payloadLength
+
 	// 生成地址字符串
 	addr := spliceAddr(localIP, localPort, remoteIP, remotePort)
 
-	// 增加流量统计
-	nf.increaseTraffic(addr, int64(length), side)
+	// 增加流量统计 (包括头部和负载的总长度)
+	nf.increaseTraffic(addr, int64(totalLength), side)
 
 	// 如果启用了 pcap 文件记录，则写入数据包
 	if nf.pcapFile != nil {
 		nf.pcapWriter.WritePacket(packet.Metadata().CaptureInfo, packet.Data())
 	}
 }
+
+//func (nf *Netflow) handlePacket(packet gopacket.Packet) {
+//	// 获取 IPv4 层
+//	ipLayer, ok := packet.Layer(layers.LayerTypeIPv4).(*layers.IPv4)
+//	if !ok {
+//		return
+//	}
+//	// 获取 TCP 层
+//	tcpLayer, ok := packet.Layer(layers.LayerTypeTCP).(*layers.TCP)
+//	if !ok {
+//		return
+//	}
+//	// 定义本地和远程的 IP 和端口
+//	localIP, localPort := ipLayer.SrcIP, tcpLayer.SrcPort
+//	remoteIP, remotePort := ipLayer.DstIP, tcpLayer.DstPort
+//
+//	// 确定数据包的方向
+//	side := nf.determineSide(ipLayer.SrcIP.String())
+//
+//	// 计算 TCP 负载长度
+//	length := len(tcpLayer.Payload)
+//	//println("length1", length)
+//	// 生成地址字符串
+//	addr := spliceAddr(localIP, localPort, remoteIP, remotePort)
+//
+//	// 增加流量统计
+//	nf.increaseTraffic(addr, int64(length), side)
+//
+//	// 如果启用了 pcap 文件记录，则写入数据包
+//	if nf.pcapFile != nil {
+//		nf.pcapWriter.WritePacket(packet.Metadata().CaptureInfo, packet.Data())
+//	}
+//}
 
 // determineSide 根据 IP 判断数据包的方向
 func (nf *Netflow) determineSide(srcIP string) sideOption {
