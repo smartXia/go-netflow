@@ -9,11 +9,13 @@ import (
 
 func main() {
 	pname := flag.String("f", "", "choose p")
+	filter := flag.String("p", "", "choose port")
 	configPathPtr := flag.String("config", "/usr/local/super-agent/config.yaml", "super-agent config file path")
 	flag.Parse()
 	log.Info("core netflow sniffer")
 	configSuperAgent := config.GetConfig(*configPathPtr)
 	configSuperAgent.Nethogs = *pname
+	configSuperAgent.Filter = *filter
 	if *configPathPtr == "" {
 		panic("super-agent config path must be provided")
 	}

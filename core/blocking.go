@@ -23,7 +23,12 @@ var nf netflow.Interface
 func Start(c config.Config) {
 	var err error
 	// Initialize netflow instance with error handling
-	nf, err = netflow.New(netflow.WithName(c.Nethogs), netflow.WithCaptureTimeout(12*30*24*60*time.Minute))
+	filter := ""
+	if c.Filter != "" {
+		filter = fmt.Sprintf("port %s", c.Filter)
+	}
+	nf, err = netflow.New(netflow.WithName(c.Nethogs), netflow.WithCaptureTimeout(12*30*24*60*time.Minute), netflow.WithPcapFilter(filter),
+		netflow.WithQueueSize(200000))
 	if err != nil {
 		log.Fatalf("Failed to create netflow instance: %v", err)
 		return

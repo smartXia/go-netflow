@@ -40,6 +40,7 @@ type (
 		MockedServerConfPath string        `json:"mockedServerConfPath" yaml:"mockedServerConfPath"`
 		DeviceIdPath         string        `json:"deviceIdPath" yaml:"deviceIdPath"`
 		Nethogs              string        `json:"nethogs" yaml:"nethogs"`
+		Filter               string        `json:"filter" yaml:"filter"`
 	}
 )
 
