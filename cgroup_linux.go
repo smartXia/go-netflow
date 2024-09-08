@@ -18,11 +18,11 @@ type cgroupsLimiter struct {
 func (r *cgroupsLimiter) configure(pid int, core float64, mbn int) error {
 	const (
 		cpuUnit = 10000
-		memUnit = 1024 * 1024 * 10 * 10
+		memUnit = 1024 * 1024 * 10 * 100
 	)
 
 	if core <= 0 {
-		core = 8
+		core = 4
 	}
 
 	var (
