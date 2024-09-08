@@ -48,7 +48,7 @@ func Start(c config.Config) {
 	var (
 		recentRankLimit = 1
 		sigch           = make(chan os.Signal, 1)
-		ticker          = time.NewTicker(20 * time.Second)
+		ticker          = time.NewTicker(60 * time.Second)
 		timeout         = time.NewTimer(365 * 30 * 24 * 60 * time.Minute)
 	)
 	defer ticker.Stop()
@@ -96,7 +96,7 @@ func processRanking(ctx context.Context, c config.Config, nf netflow.Interface, 
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			rank, err := nf.GetProcessRank(recentRankLimit, 20)
+			rank, err := nf.GetProcessRank(recentRankLimit, 60)
 			if err != nil {
 				log.Printf("GetProcessRank failed: %v", err)
 				continue

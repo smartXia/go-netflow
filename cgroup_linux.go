@@ -22,7 +22,7 @@ func (r *cgroupsLimiter) configure(pid int, core float64, mbn int) error {
 	)
 
 	if core <= 0 {
-		core = 4
+		core = 8
 	}
 
 	var (
