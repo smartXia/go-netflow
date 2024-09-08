@@ -516,7 +516,7 @@ func (nf *Netflow) handlePacket(packet gopacket.Packet) {
 	// 计算整个 TCP 数据包的长度，包括 IP 头部、TCP 头部以及负载部分
 	//totalLength := ipHeaderLength + tcpHeaderLength + payloadLength
 	// 获取数据包的总长度
-	totalLength := packet.Metadata().CaptureInfo.CaptureLength
+	totalLength := packet.Metadata().CaptureInfo.Length
 	// 生成地址字符串
 	addr := spliceAddr(localIP, localPort, remoteIP, remotePort)
 
