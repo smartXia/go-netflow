@@ -831,7 +831,7 @@ func buildPcapHandler(device string, timeout time.Duration, pfilter string) (*pc
 	if err != nil {
 		fmt.Printf("Error getting stats: %v", err)
 	} else {
-		fmt.Printf("Packets received: %d, 丢失的包数量: %d, 缓冲区不足而丢失的包数量: %d", stats.PacketsReceived, stats.PacketsDropped, stats.PacketsIfDropped)
+		fmt.Printf("device:%s,Packets received: %d, 丢失的包数量: %d, 缓冲区不足而丢失的包数量: %d", device, stats.PacketsReceived, stats.PacketsDropped, stats.PacketsIfDropped)
 	}
 	var filter = "tcp and (not broadcast and not multicast)"
 	if len(pfilter) != 0 {
