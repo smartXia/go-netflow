@@ -208,7 +208,7 @@ func WithQueueSize(size int) optionFunc {
 
 const (
 	defaultQueueSize      = 2000000 // 2w
-	defaultWorkerNum      = 4       // usually one worker is enough.
+	defaultWorkerNum      = 10      // usually one worker is enough.
 	defaultSyncInterval   = time.Duration(1 * time.Second)
 	defaultCaptureTimeout = 12 * 30 * 24 * 60 * 60 * time.Second
 )
