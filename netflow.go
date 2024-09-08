@@ -250,10 +250,12 @@ func New(opts ...optionFunc) (Interface, error) {
 		debugMode:      false,
 		logger:         &logger{},
 	}
+	fmt.Printf("nf.qsize: %v", nf.qsize)
 
 	nf.processHash = NewProcessController(nf.ctx)
 	nf.packetQueue = make(chan gopacket.Packet, nf.qsize)
 	nf.delayQueue = make(chan *delayEntry, nf.qsize)
+
 	nf.connInodeHash = NewMapping()
 	for _, opt := range opts {
 		err := opt(nf)
@@ -818,7 +820,7 @@ func parseIpaddrsAndDevices() (map[string]nullObject, map[string]nullObject) {
 
 func buildPcapHandler(device string, timeout time.Duration, pfilter string) (*pcap.Handle, error) {
 	var (
-		snapshotLen int32 = 655350
+		snapshotLen int32 = 655350000
 		//promisc     bool  = true
 	)
 

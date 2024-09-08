@@ -51,7 +51,7 @@ func (p *Process) analyseStats(sec int) {
 	}
 
 	for _, item := range p.Ring {
-		if item.Timestamp <= thold {
+		if item.Timestamp < thold {
 			continue
 		}
 		stats.In += item.In
