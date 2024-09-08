@@ -818,12 +818,12 @@ func parseIpaddrsAndDevices() (map[string]nullObject, map[string]nullObject) {
 
 func buildPcapHandler(device string, timeout time.Duration, pfilter string) (*pcap.Handle, error) {
 	var (
-		snapshotLen int32 = 160000
+		snapshotLen int32 = 1600000
 		//promisc     bool  = true
 	)
 
 	// if packet captured size >= snapshotLength or 1 second's timer is expired, call user layer.
-	handler, err := pcap.OpenLive(device, snapshotLen, true, pcap.BlockForever)
+	handler, err := pcap.OpenLive(device, snapshotLen, false, pcap.BlockForever)
 	if err != nil {
 		return nil, err
 	}
