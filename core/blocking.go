@@ -96,7 +96,7 @@ func processRanking(ctx context.Context, c config.Config, nf netflow.Interface, 
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			rank, err := nf.GetProcessRank(recentRankLimit, 5)
+			rank, err := nf.GetProcessRank(recentRankLimit, 10)
 			if err != nil {
 				log.Printf("GetProcessRank failed: %v", err)
 				continue
