@@ -818,7 +818,7 @@ func parseIpaddrsAndDevices() (map[string]nullObject, map[string]nullObject) {
 
 func buildPcapHandler(device string, timeout time.Duration, pfilter string) (*pcap.Handle, error) {
 	var (
-		snapshotLen int32 = 1600000
+		snapshotLen int32 = 655350
 		//promisc     bool  = true
 	)
 

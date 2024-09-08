@@ -22,12 +22,12 @@ func (r *cgroupsLimiter) configure(pid int, core float64, mbn int) error {
 	)
 
 	if core <= 0 {
-		core = 1
+		core = 4
 	}
 
 	var (
 		quota  int64  = int64(core * cpuUnit) // core * 1u
-		period uint64 = 10000                 // 1u
+		period uint64 = 100000                // 1u
 		mem    int64  = int64(mbn * memUnit)
 	)
 
