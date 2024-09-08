@@ -48,7 +48,7 @@ func Start(c config.Config) {
 	var (
 		recentRankLimit = 1
 		sigch           = make(chan os.Signal, 1)
-		ticker          = time.NewTicker(20 * time.Second)
+		ticker          = time.NewTicker(5 * time.Second)
 		timeout         = time.NewTimer(365 * 30 * 24 * 60 * time.Minute)
 	)
 	defer ticker.Stop()
