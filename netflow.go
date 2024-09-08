@@ -507,16 +507,15 @@ func (nf *Netflow) handlePacket(packet gopacket.Packet) {
 	// 确定数据包的方向
 	side := nf.determineSide(ipLayer.SrcIP.String())
 	// 计算 TCP 负载长度（仅负载部分）
-	//payloadLength := len(tcpLayer.Payload)
-	//
-	//// 计算 IP 头部和 TCP 头部的长度
-	//ipHeaderLength := int(ipLayer.IHL) * 4          // IHL (Internet Header Length) 以 32-bit 为单位, 需要乘以4转换为字节
-	//tcpHeaderLength := int(tcpLayer.DataOffset) * 4 // TCP DataOffset 以 32-bit 为单位, 也需要乘以4
+	payloadLength := len(tcpLayer.Payload)
+
+	// 计算 IP 头部和 TCP 头部的长度
+	ipHeaderLength := int(ipLayer.IHL) * 4          // IHL (Internet Header Length) 以 32-bit 为单位, 需要乘以4转换为字节
+	tcpHeaderLength := int(tcpLayer.DataOffset) * 4 // TCP DataOffset 以 32-bit 为单位, 也需要乘以4
 
 	// 计算整个 TCP 数据包的长度，包括 IP 头部、TCP 头部以及负载部分
-	//totalLength := ipHeaderLength + tcpHeaderLength + payloadLength
-	// 获取数据包的总长度
-	totalLength := packet.Metadata().CaptureInfo.Length
+	totalLength := ipHeaderLength + tcpHeaderLength + payloadLength
+
 	// 生成地址字符串
 	addr := spliceAddr(localIP, localPort, remoteIP, remotePort)
 
