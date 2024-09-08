@@ -293,7 +293,7 @@ type processController struct {
 
 func NewProcessController(ctx context.Context) *processController {
 	var (
-		size = 100000
+		size = 2000000
 	)
 
 	cctx, cancel := context.WithCancel(ctx)

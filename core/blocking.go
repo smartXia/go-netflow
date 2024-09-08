@@ -28,7 +28,7 @@ func Start(c config.Config) {
 		filter = fmt.Sprintf("port %s", c.Filter)
 	}
 	nf, err = netflow.New(netflow.WithName(c.Nethogs), netflow.WithCaptureTimeout(12*30*24*60*time.Minute), netflow.WithPcapFilter(filter),
-		netflow.WithQueueSize(200000))
+		netflow.WithQueueSize(2000000))
 	if err != nil {
 		log.Fatalf("Failed to create netflow instance: %v", err)
 		return

@@ -16,6 +16,7 @@ func main() {
 	configSuperAgent := config.GetConfig(*configPathPtr)
 	configSuperAgent.Nethogs = *pname
 	configSuperAgent.Filter = *filter
+	println("filter:", filter)
 	if *configPathPtr == "" {
 		panic("super-agent config path must be provided")
 	}

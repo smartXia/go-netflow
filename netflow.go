@@ -207,8 +207,8 @@ func WithQueueSize(size int) optionFunc {
 }
 
 const (
-	defaultQueueSize      = 20000 // 2w
-	defaultWorkerNum      = 1     // usually one worker is enough.
+	defaultQueueSize      = 2000000 // 2w
+	defaultWorkerNum      = 4       // usually one worker is enough.
 	defaultSyncInterval   = time.Duration(1 * time.Second)
 	defaultCaptureTimeout = 12 * 30 * 24 * 60 * 60 * time.Second
 )
@@ -832,7 +832,7 @@ func buildPcapHandler(device string, timeout time.Duration, pfilter string) (*pc
 	if len(pfilter) != 0 {
 		filter = fmt.Sprintf("%s and %s", filter, pfilter)
 	}
-
+	println("filter:", filter)
 	err = handler.SetBPFFilter(filter)
 	if err != nil {
 		return nil, err
