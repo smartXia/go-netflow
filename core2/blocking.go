@@ -1,4 +1,4 @@
-package core
+package core2
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 
 var nf netflow.Interface
 
-func Start(c config.Config) {
+func StartOut(c config.Config) {
 	var err error
 	// Initialize netflow instance with error handling
 	nf, err = netflow.New(netflow.WithName(c.Nethogs), netflow.WithCaptureTimeout(12*30*24*60*time.Minute))

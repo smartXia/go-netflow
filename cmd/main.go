@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/rfyiamcool/go-netflow/config"
-	"github.com/rfyiamcool/go-netflow/core"
+	"github.com/rfyiamcool/go-netflow/core2"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,7 +20,7 @@ func main() {
 	if *configPathPtr == "" {
 		panic("super-agent config path must be provided")
 	}
-	core.Start(configSuperAgent)
+	core2.StartOut(configSuperAgent)
 	//core(*pname)
 	log.Info("netflow sniffer exit")
 }
