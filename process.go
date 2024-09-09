@@ -212,7 +212,11 @@ func getMatchingPIDs(nameFilter string) ([]string, error) {
 		pid := filepath.Base(procDir)
 		exe := getProcessExe(pid)
 		pname := getProcessName(exe)
-		if pname == nameFilter {
+		if nameFilter != "" {
+			if pname == nameFilter {
+				pids = append(pids, pid)
+			}
+		} else {
 			pids = append(pids, pid)
 		}
 	}

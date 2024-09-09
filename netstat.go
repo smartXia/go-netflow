@@ -1,8 +1,8 @@
 package netflow
 
 import (
+	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -44,7 +44,7 @@ func (ci *ConnectionItem) GetAddr() string {
 	return ci.Addr
 }
 
-func parseNetworkLines(tp string) ([]string, error) {
+func parseNetworkLines(tp string, processLine func(string)) error {
 	var pf string
 
 	switch tp {
@@ -60,14 +60,55 @@ func parseNetworkLines(tp string) ([]string, error) {
 		pf = procTCPFile
 	}
 
-	data, err := ioutil.ReadFile(pf)
+	file, err := os.Open(pf)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	// Skip the first line (header)
+	if scanner.Scan() {
+		// Process each subsequent line
+		for scanner.Scan() {
+			line := scanner.Text()
+			processLine(line) // Process the line here
+		}
 	}
 
-	lines := strings.Split(string(data), "\n")
-	return lines[1 : len(lines)-1], nil
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	return nil
 }
+
+//
+//func parseNetworkLines(tp string) ([]string, error) {
+//	var pf string
+//
+//	switch tp {
+//	case "tcp":
+//		pf = procTCPFile
+//	case "udp":
+//		pf = procUDPFile
+//	case "tcp6":
+//		pf = procTCP6File
+//	case "udp6":
+//		pf = procUDP6File
+//	default:
+//		pf = procTCPFile
+//	}
+//
+//	data, err := ioutil.ReadFile(pf)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	lines := strings.Split(string(data), "\n")
+//	return lines[1 : len(lines)-1], nil
+//}
 
 func hex2dec(hexstr string) string {
 	i, _ := strconv.ParseInt(hexstr, 16, 0)
@@ -129,27 +170,27 @@ func removeEmpty(array []string) []string {
 
 type filterFunc func()
 
-func netstat(t string) ([]*ConnectionItem, error) {
-	var (
-		conns []*ConnectionItem
-	)
-
-	data, err := parseNetworkLines(t)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, line := range data {
-		pp := getConnectionItem(line)
-		if pp == nil {
-			continue
-		}
-
-		conns = append(conns, pp)
-	}
-
-	return conns, nil
-}
+//
+//func netstat(t string) ([]*ConnectionItem, error) {
+//	var (
+//		conns []*ConnectionItem
+//	)
+//
+//	data, err := parseNetworkLines(t)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	for _, line := range data {
+//		pp := getConnectionItem(line)
+//		if pp == nil {
+//			continue
+//		}
+//
+//		conns = append(conns, pp)
+//	}
+//	return conns, nil
+//}
 
 func getConnectionItem(line string) *ConnectionItem {
 	// local ip and port
@@ -220,25 +261,25 @@ func getConnectionItem(line string) *ConnectionItem {
 }
 
 // Tcp func Get a slice of Process type with TCP data
-func Tcp() []*ConnectionItem {
-	data, _ := netstat("tcp")
-	return data
-}
-
-// Udp func Get a slice of Process type with UDP data
-func Udp() []*ConnectionItem {
-	data, _ := netstat("udp")
-	return data
-}
-
-// Tcp6 func Get a slice of Process type with TCP6 data
-func Tcp6() []*ConnectionItem {
-	data, _ := netstat("tcp6")
-	return data
-}
-
-// Udp6 func Get a slice of Process type with UDP6 data
-func Udp6() []*ConnectionItem {
-	data, _ := netstat("udp6")
-	return data
-}
+//func Tcp() []*ConnectionItem {
+//	data, _ := netstat("tcp")
+//	return data
+//}
+//
+//// Udp func Get a slice of Process type with UDP data
+//func Udp() []*ConnectionItem {
+//	data, _ := netstat("udp")
+//	return data
+//}
+//
+//// Tcp6 func Get a slice of Process type with TCP6 data
+//func Tcp6() []*ConnectionItem {
+//	data, _ := netstat("tcp6")
+//	return data
+//}
+//
+//// Udp6 func Get a slice of Process type with UDP6 data
+//func Udp6() []*ConnectionItem {
+//	data, _ := netstat("udp6")
+//	return data
+//}

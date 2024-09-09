@@ -76,7 +76,7 @@ func WithPcapFilter(filter string) optionFunc {
 
 		st := strings.TrimSpace(filter)
 		if strings.HasPrefix(st, "and") {
-			return errors.New("invalid pcap filter")
+			//return errors.New("invalid pcap filter")
 		}
 
 		o.pcapFilter = filter
@@ -207,8 +207,8 @@ func WithQueueSize(size int) optionFunc {
 }
 
 const (
-	defaultQueueSize      = 200000000 // 2w
-	defaultWorkerNum      = 1         // usually one worker is enough.
+	defaultQueueSize      = 2000000 // 2w
+	defaultWorkerNum      = 1       // usually one worker is enough.
 	defaultSyncInterval   = time.Duration(1 * time.Second)
 	defaultCaptureTimeout = 12 * 30 * 24 * 60 * 60 * time.Second
 )
@@ -250,7 +250,6 @@ func New(opts ...optionFunc) (Interface, error) {
 		debugMode:      false,
 		logger:         &logger{},
 	}
-	fmt.Printf("nf.qsize: %v", nf.qsize)
 
 	nf.processHash = NewProcessController(nf.ctx)
 	nf.packetQueue = make(chan gopacket.Packet, nf.qsize)
@@ -263,7 +262,14 @@ func New(opts ...optionFunc) (Interface, error) {
 			return nil, err
 		}
 	}
-
+	fmt.Printf("nf.qsize: %v", nf.qsize)
+	//定期清理过期条目
+	go func() {
+		for {
+			time.Sleep(2 * time.Minute)               // 每10分钟清理一次
+			nf.connInodeHash.Cleanup(2 * time.Minute) // 清理10分钟之前的条目
+		}
+	}()
 	return nf, nil
 }
 
@@ -418,23 +424,66 @@ func (nf *Netflow) rescanProcessInodes() error {
 	return nf.processHash.Rescan()
 }
 
+//
+//func (nf *Netflow) rescanConns() error {
+//	conns, err := netstat("tcp")
+//	if err != nil {
+//		return err
+//	}
+//
+//	for _, conn := range conns {
+//		nf.connInodeHash.Add(conn.Addr, conn.Inode)
+//		nf.connInodeHash.Add(conn.ReverseAddr, conn.Inode)
+//	}
+//
+//	return nil
+//}
+
 func (nf *Netflow) rescanConns() error {
-	conns, err := netstat("tcp")
+	err := parseNetworkLines("tcp", func(line string) {
+		conn := getConnectionItem(line)
+		if conn != nil {
+			if !nf.connInodeHash.Exists(conn.Addr, conn.Inode) {
+				nf.connInodeHash.Add(conn.Addr, conn.Inode)
+			}
+			if !nf.connInodeHash.Exists(conn.ReverseAddr, conn.Inode) {
+				nf.connInodeHash.Add(conn.ReverseAddr, conn.Inode)
+			}
+		}
+	})
 	if err != nil {
 		return err
 	}
 
-	for _, conn := range conns {
-		nf.connInodeHash.Add(conn.Addr, conn.Inode)
-		nf.connInodeHash.Add(conn.ReverseAddr, conn.Inode)
-	}
+	// 打印 connInodeHash 的长度
+	//fmt.Printf("Current length of connInodeHash: %d\n", nf.connInodeHash.String())
 
 	return nil
 }
 
+//func (nf *Netflow) rescanConns() error {
+//	conns, err := netstat("tcp")
+//	if err != nil {
+//		return err
+//	}
+//
+//	for _, conn := range conns {
+//		// 仅在不存在的情况下添加
+//		if !nf.connInodeHash.Exists(conn.Addr, conn.Inode) {
+//			nf.connInodeHash.Add(conn.Addr, conn.Inode)
+//		}
+//		if !nf.connInodeHash.Exists(conn.ReverseAddr, conn.Inode) {
+//			nf.connInodeHash.Add(conn.ReverseAddr, conn.Inode)
+//		}
+//	}
+//	fmt.Printf("connectMap长度:%d", nf.connInodeHash.Length())
+//	return nil
+//}
+
 func (nf *Netflow) captureDevice(dev string) {
 	handler, err := buildPcapHandler(dev, nf.captureTimeout, nf.pcapFilter)
 	if err != nil {
+		fmt.Printf("Error building pcap handler: %v\n", err)
 		return
 	}
 
@@ -442,21 +491,57 @@ func (nf *Netflow) captureDevice(dev string) {
 		handler.Close()
 	}()
 
-	packetSource := gopacket.NewPacketSource(
-		handler,
-		handler.LinkType(),
-	)
+	packetSource := gopacket.NewPacketSource(handler, handler.LinkType())
+	packetChan := make(chan gopacket.Packet, 10000000) // 缓冲通道
+
+	go func() {
+		for pkt := range packetChan {
+			nf.enqueue(pkt)
+		}
+	}()
 
 	for {
 		select {
 		case <-nf.ctx.Done():
+			close(packetChan) // 确保在退出时关闭通道
 			return
-
 		case pkt := <-packetSource.Packets():
-			nf.enqueue(pkt)
+			select {
+			case packetChan <- pkt:
+				// 成功放入通道
+			default:
+				// 通道满了，丢弃包或者记录日志
+				fmt.Println("Packet dropped due to full buffer")
+			}
 		}
 	}
 }
+
+//func (nf *Netflow) captureDevice(dev string) {
+//	handler, err := buildPcapHandler(dev, nf.captureTimeout, nf.pcapFilter)
+//	if err != nil {
+//		return
+//	}
+//
+//	defer func() {
+//		handler.Close()
+//	}()
+//
+//	packetSource := gopacket.NewPacketSource(
+//		handler,
+//		handler.LinkType(),
+//	)
+//
+//	for {
+//		select {
+//		case <-nf.ctx.Done():
+//			return
+//
+//		case pkt := <-packetSource.Packets():
+//			nf.enqueue(pkt)
+//		}
+//	}
+//}
 
 func (nf *Netflow) enqueue(pkt gopacket.Packet) {
 	select {
@@ -472,7 +557,6 @@ func (nf *Netflow) dequeue() gopacket.Packet {
 	select {
 	case pkt := <-nf.packetQueue:
 		return pkt
-
 	case <-nf.ctx.Done():
 		return nil
 	}
@@ -688,6 +772,7 @@ func (nf *Netflow) pushDelayQueue(de *delayEntry) {
 	select {
 	case nf.delayQueue <- de:
 	default:
+		fmt.Println("Packet dropped due to full buffer")
 		// if q is full, drain actively .
 	}
 }
@@ -716,7 +801,7 @@ func (nf *Netflow) handleDelayEntry(entry *delayEntry) error {
 }
 
 func (nf *Netflow) getProcessByAddr(addr string) (*Process, error) {
-	inode := nf.connInodeHash.Get(addr)
+	inode, _ := nf.connInodeHash.Get(addr)
 	if len(inode) == 0 {
 		// not found, to rescan
 		nf.logDebug("not found inode ", addr)
@@ -837,7 +922,9 @@ func buildPcapHandler(device string, timeout time.Duration, pfilter string) (*pc
 	}
 	var filter = "tcp and (not broadcast and not multicast)"
 	if len(pfilter) != 0 {
-		filter = fmt.Sprintf("%s and %s", filter, pfilter)
+		//filter = fmt.Sprintf("%s and %s", filter, pfilter)
+		//filter = fmt.Sprintf("%s and %s", filter, pfilter)
+		filter = pfilter
 	}
 	println("filter:", filter)
 	err = handler.SetBPFFilter(filter)

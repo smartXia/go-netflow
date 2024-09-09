@@ -25,8 +25,9 @@ func Start(c config.Config) {
 	// Initialize netflow instance with error handling
 	filter := ""
 	if c.Filter != "" {
-		filter = fmt.Sprintf("port %s", c.Filter)
+		filter = fmt.Sprintf("tcp and port %s ", c.Filter)
 	}
+	println(filter)
 	nf, err = netflow.New(netflow.WithName(c.Nethogs), netflow.WithCaptureTimeout(12*30*24*60*time.Minute), netflow.WithPcapFilter(filter),
 		netflow.WithQueueSize(20000))
 	if err != nil {
@@ -96,12 +97,12 @@ func processRanking(ctx context.Context, c config.Config, nf netflow.Interface, 
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			rank, err := nf.GetProcessRank(recentRankLimit, 60)
+			ps, err := nf.GetProcessRank(recentRankLimit, 5)
 			if err != nil {
 				log.Printf("GetProcessRank failed: %v", err)
 				continue
 			}
-			showTable(c, rank)
+			showTable(c, ps)
 			clear()
 		}
 	}
@@ -130,9 +131,8 @@ func showTable(c config.Config, ps []*netflow.Process) {
 		out += po.TrafficStats.OutRate
 		items = append(items, item)
 	}
-	fmt.Printf("原始下载%x MiB ,上传%x MiB\n", in, out)
 	fmt.Println("原始下载:", in)
-
+	fmt.Println("原始上传:", out)
 	//上报流量信息
 	reportHandler(in, out, c)
 	table.AppendBulk(items)

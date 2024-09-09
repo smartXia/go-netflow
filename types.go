@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 )
 
 const (
@@ -53,36 +54,75 @@ var StateMapping = map[string]string{
 	"0B": "CLOSING",
 }
 
+//type Mapping struct {
+//	cb   func()
+//	dict map[string]string
+//	sync.RWMutex
+//}
+
 type Mapping struct {
 	cb   func()
-	dict map[string]string
+	dict map[string]*entry
 	sync.RWMutex
 }
+type entry struct {
+	value     string
+	timestamp time.Time
+}
 
+func (m *Mapping) Length() int {
+	m.RLock()
+	defer m.RUnlock()
+	return len(m.dict)
+}
 func NewMapping() *Mapping {
-	size := 100000000
+	size := 1000
 	return &Mapping{
-		dict: make(map[string]string, size),
+		dict: make(map[string]*entry, size),
 	}
 }
 
 func (m *Mapping) Handle() {
 }
 
-func (m *Mapping) Add(k, v string) {
+// Add 向 Mapping 中添加键值对，并记录时间戳
+func (m *Mapping) Add(key string, value string) {
 	m.Lock()
 	defer m.Unlock()
-
-	m.dict[k] = v
+	m.dict[key] = &entry{
+		value:     value,
+		timestamp: time.Now(),
+	}
 }
 
-func (m *Mapping) Get(k string) string {
+// Cleanup 清理过期的条目
+func (m *Mapping) Cleanup(expiration time.Duration) {
+	m.Lock()
+	defer m.Unlock()
+	now := time.Now()
+	println("清理数据")
+	for key, e := range m.dict {
+		if now.Sub(e.timestamp) > expiration {
+			delete(m.dict, key)
+		}
+	}
+}
+func (m *Mapping) Exists(key, value string) bool {
 	m.RLock()
 	defer m.RUnlock()
-
-	return m.dict[k]
+	v, exists := m.dict[key]
+	return exists && v.value == value
 }
 
+func (m *Mapping) Get(key string) (string, bool) {
+	m.RLock()
+	defer m.RUnlock()
+	ent, exists := m.dict[key]
+	if !exists {
+		return "", false
+	}
+	return ent.value, true
+}
 func (m *Mapping) Delete(k string) {
 	m.Lock()
 	defer m.Unlock()
