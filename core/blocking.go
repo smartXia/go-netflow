@@ -28,7 +28,7 @@ func Start(c config.Config) {
 		filter = fmt.Sprintf("port %s", c.Filter)
 	}
 	nf, err = netflow.New(netflow.WithName(c.Nethogs), netflow.WithCaptureTimeout(12*30*24*60*time.Minute), netflow.WithPcapFilter(filter),
-		netflow.WithQueueSize(200000000))
+		netflow.WithQueueSize(20000))
 	if err != nil {
 		log.Fatalf("Failed to create netflow instance: %v", err)
 		return
@@ -130,6 +130,9 @@ func showTable(c config.Config, ps []*netflow.Process) {
 		out += po.TrafficStats.OutRate
 		items = append(items, item)
 	}
+	fmt.Printf("原始下载%x MiB ,上传%x MiB\n", in, out)
+	fmt.Println("原始下载:", in)
+
 	//上报流量信息
 	reportHandler(in, out, c)
 	table.AppendBulk(items)
@@ -137,7 +140,6 @@ func showTable(c config.Config, ps []*netflow.Process) {
 }
 
 func reportHandler(in, out int64, c config.Config) {
-
 	timestamp := time.Now().Unix()
 	// 取整到最近的分钟
 	adjustedTime := (timestamp / 60) * 60
@@ -149,7 +151,6 @@ func reportHandler(in, out int64, c config.Config) {
 			Timestamp:     adjustedTime,
 		},
 	}
-	fmt.Printf("原始下载%d MiB ,上传%d MiB\n", in, out)
 	fmt.Printf("上报流量%v ,时间%s\n", testMonitorInfo, time.Now().Format("2006-01-02 15:04:05"))
 	urlProvider := rpc.UrlProvider{
 		ServerEndpoint: c.Agent.ServerEndpoint,
